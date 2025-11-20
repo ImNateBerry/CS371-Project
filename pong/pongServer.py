@@ -24,7 +24,7 @@ clients = []
 # Pre: <What preconditions does this method expect to be true? Ex. This method expects the program to be in X state before being called> 
 # Post: <What postconditions are true after this method is called? Ex. This method changed global variable X to Y>
 # =================================================================================================
-def handle_clients(conn: socket.socket) -> None:
+def handle_clients(conn: socket.socket, addr: tuple) -> None:
 
     # initial width and height to the client
     conn.send(b"640,480")
@@ -48,13 +48,13 @@ def handle_clients(conn: socket.socket) -> None:
 server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 
-server.bind(("0.0.0.0", 12345))
+server.bind(("127.0.0.1", 12345))
 server.listen()
 
 print("Listening on port 12345...")
 
 while True:
-    conn, addr = server.accept()
+    conn, addr= server.accept()
     clients.append(conn)
-    thread = threading.Thread(target=handle_client, args=(conn, addr), daemon=True)
+    thread = threading.Thread(target=handle_clients, args=(conn, addr), daemon=True)
     thread.start()
