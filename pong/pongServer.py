@@ -65,7 +65,8 @@ def handle_clients(conn: socket.socket, addr: tuple) -> None:
 server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 
-server.bind(("127.0.0.1", 12345))
+# bind to 0.0.0.0 to allow connection from external devices
+server.bind(("0.0.0.0", 12345))
 server.listen()
 
 print("Listening on port 12345...")
