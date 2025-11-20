@@ -26,24 +26,28 @@ clients = []
 # =================================================================================================
 def handle_clients(conn: socket.socket, addr: tuple) -> None:
 
-    # initial width and height to the client
-    conn.send(b"640,480")
+    try:
+        # initial width and height to the client
+        conn.send(b"640,480")
 
-    # recieve the data from client
-    while True: 
-        try:
-            data = conn.recv(1024)
-            if not data:
+        # recieve the data from client
+        while True: 
+            try:
+                data = conn.recv(1024)
+                if not data:
+                    break
+                for c in clients:
+                    if c != conn:
+                        c.send(data)
+            except:
                 break
-            for c in clients:
-                if c != conn:
-                    c.send(data)
-        except:
-            break
+    finally:
+        try:
+            conn.close()
 
-        conn.close()
-        if conn in clients:
-            clients.remove(conn)
+        finally:
+            if conn in clients:
+                clients.remove(conn)
     
 server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
@@ -54,7 +58,7 @@ server.listen()
 print("Listening on port 12345...")
 
 while True:
-    conn, addr= server.accept()
+    conn, addr = server.accept()
     clients.append(conn)
     thread = threading.Thread(target=handle_clients, args=(conn, addr), daemon=True)
     thread.start()
