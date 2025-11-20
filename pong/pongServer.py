@@ -8,6 +8,7 @@
 
 import socket
 import threading
+import time
 
 # Use this file to write your server logic
 # You will need to support at least two clients
@@ -27,8 +28,20 @@ clients = []
 def handle_clients(conn: socket.socket, addr: tuple) -> None:
 
     try:
+
+        # wait for other player to connect
+        while len(clients) < 2:
+            time.sleep(0.5)
+
+        # assign sides
+        if clients.index(conn) == 0:
+            side = "left"
+        else:
+            side = "right"
+
         # initial width and height to the client
-        conn.send(b"640,480")
+        msg = f"640,480,{side}"
+        conn.send(msg.encode())
 
         # recieve the data from client
         while True: 

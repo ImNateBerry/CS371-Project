@@ -61,6 +61,9 @@ def playGame(screenWidth:int, screenHeight:int, playerPaddle:str, client:socket.
 
     sync = 0
 
+    # set client to non-blocking to stop receive part from bugging out in the loop
+    client.setblocking(False)
+
     while True:
         # Wiping the screen
         screen.fill((0,0,0))
@@ -85,16 +88,18 @@ def playGame(screenWidth:int, screenHeight:int, playerPaddle:str, client:socket.
         # where the ball is and the current score.
         # Feel free to change when the score is updated to suit your needs/requirements
         # =========================================================================================
-        data_to_send = {
-            "paddle_info": playerPaddleObj.rect.y,
-        }
-
+        
+        # send paddle y to server
+        data_to_send = {"paddle_y": playerPaddleObj.rect.y}
+        
+        # if left player send ball x, y, l score, and r score to server
         if playerPaddle == "left":
             data_to_send["ball_x"] = ball.rect.x
             data_to_send["ball_y"] = ball.rect.y
             data_to_send["l_score"] = lScore
-            data_to_send['r_score'] = rScore
-        
+            data_to_send["r_score"] = rScore
+
+        # sends data to server
         client.send(json.dumps(data_to_send).encode())
 
         # Update the player paddle and opponent paddle's location on the screen
@@ -155,7 +160,7 @@ def playGame(screenWidth:int, screenHeight:int, playerPaddle:str, client:socket.
         pygame.draw.rect(screen, WHITE, topWall)
         pygame.draw.rect(screen, WHITE, bottomWall)
         scoreRect = updateScore(lScore, rScore, screen, WHITE, scoreFont)
-        pygame.display.update([topWall, bottomWall, ball, leftPaddle, rightPaddle, scoreRect, winMessage])
+        pygame.display.flip() # fixes buggy trails left behind by ball and paddles
         clock.tick(60)
         
         # This number should be synchronized between you and your opponent.  If your number is larger
@@ -166,7 +171,31 @@ def playGame(screenWidth:int, screenHeight:int, playerPaddle:str, client:socket.
         # Send your server update here at the end of the game loop to sync your game with your
         # opponent's game
         # =========================================================================================
-        client.send(json.dumps({"sync": sync}).encode())
+        
+        try:
+            while True: 
+                # recieve data from server
+                data = client.recv(4096)
+                if not data: break
+                
+                # try to parse data from server
+                try:
+                    msg = json.loads(data.decode())
+                    
+                    if "paddle_y" in msg:
+                        opponentPaddleObj.rect.y = msg["paddle_y"]
+                    
+                    # if right player update ball x, y, l score, and r score
+                    if playerPaddle == "right":
+                        if "ball_x" in msg: ball.rect.x = msg["ball_x"]
+                        if "ball_y" in msg: ball.rect.y = msg["ball_y"]
+                        if "l_score" in msg: lScore = msg["l_score"]
+                        if "r_score" in msg: rScore = msg["r_score"]
+                except:
+                    pass # catches error in JSON parsing
+        except:
+            pass 
+        
 
 # This is where you will connect to the server to get the info required to call the game loop.  Mainly
 # the screen width, height and player paddle (either "left" or "right")
@@ -187,18 +216,21 @@ def joinServer(ip:str, port:str, errorLabel:tk.Label, app:tk.Tk) -> None:
 
     # Get the required information from your server (screen width, height & player paddle, "left or "right)
     output = client.recv(1024).decode()
-    screenWidth, screenHeight = output.split(",")
-    screenWidth = int(screenWidth)
-    screenHeight = int(screenHeight)
+    parts = output.split(",")
+    screenWidth = int(parts[0])
+    screenHeight = int(parts[1])
+    assignedSide = "left"
+    if len(parts) > 2:
+        assignedSide = parts[2].strip()
 
     # If you have messages you'd like to show the user use the errorLabel widget like so
     errorLabel.config(text=f"Some update text. You input: IP: {ip}, Port: {port}")
     # You may or may not need to call this, depending on how many times you update the label
     errorLabel.update()     
 
-    # # Close this window and start the game with the info passed to you from the server
+    # Close this window and start the game with the info passed to you from the server
     app.withdraw()     # Hides the window (we'll kill it later)
-    playGame(screenWidth, screenHeight, "left", client)  # User will be either left or right paddle
+    playGame(screenWidth, screenHeight, assignedSide, client)  # User will be either left or right paddle
     app.quit()         # Kills the window
 
 
