@@ -10,6 +10,7 @@ import pygame
 import tkinter as tk
 import sys
 import socket
+import json
 
 from assets.code.helperCode import *
 
@@ -83,9 +84,18 @@ def playGame(screenWidth:int, screenHeight:int, playerPaddle:str, client:socket.
         # Your code here to send an update to the server on your paddle's information,
         # where the ball is and the current score.
         # Feel free to change when the score is updated to suit your needs/requirements
-        
-        
         # =========================================================================================
+        data_to_send = {
+            "paddle_info": playerPaddleObj.rect.y,
+        }
+
+        if playerPaddle == "left":
+            data_to_send["ball_x"] = ball.rect.x
+            data_to_send["ball_y"] = ball.rect.y
+            data_to_send["l_score"] = lScore
+            data_to_send['r_score'] = rScore
+        
+        client.send(json.dumps(data_to_send).encode())
 
         # Update the player paddle and opponent paddle's location on the screen
         for paddle in [playerPaddleObj, opponentPaddleObj]:
@@ -155,11 +165,9 @@ def playGame(screenWidth:int, screenHeight:int, playerPaddle:str, client:socket.
         # =========================================================================================
         # Send your server update here at the end of the game loop to sync your game with your
         # opponent's game
-
         # =========================================================================================
-
-
-
+        client.send(json.dumps({"sync": sync}).encode())
+        
 
 # This is where you will connect to the server to get the info required to call the game loop.  Mainly
 # the screen width, height and player paddle (either "left" or "right")
