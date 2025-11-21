@@ -36,4 +36,4 @@ python pongClient.py
 
 Known Bugs
 ==========
-
+- Only player who joins first can reset game
