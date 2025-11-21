@@ -36,8 +36,11 @@ def handle_clients(conn: socket.socket, addr: tuple) -> None:
         # assign sides
         if clients.index(conn) == 0:
             side = "left"
-        else:
+        elif clients.index(conn) == 1:
             side = "right"
+        else:
+            side = "spectator"
+        
 
         # initial width and height to the client
         msg = f"640,480,{side}"
