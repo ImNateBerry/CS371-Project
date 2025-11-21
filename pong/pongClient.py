@@ -104,7 +104,6 @@ def playGame(screenWidth:int, screenHeight:int, playerPaddle:str, client:socket.
                     playerPaddleObj.moving = "up"
 
             elif event.type == pygame.KEYUP and playerPaddle != "spectator":
-            elif event.type == pygame.KEYUP:
                 playerPaddleObj.moving = ""
 
         # =========================================================================================
