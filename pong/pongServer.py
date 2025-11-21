@@ -57,7 +57,6 @@ def handle_clients(conn: socket.socket, addr: tuple) -> None:
     finally:
         try:
             conn.close()
-
         finally:
             if conn in clients:
                 clients.remove(conn)
@@ -69,8 +68,9 @@ server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 server.bind(("0.0.0.0", 12345))
 server.listen()
 
-print("Listening on port 12345...")
+print("Listening on port 12345")
 
+# listen for connection
 while True:
     conn, addr = server.accept()
     clients.append(conn)

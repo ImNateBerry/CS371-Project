@@ -90,7 +90,7 @@ def playGame(screenWidth:int, screenHeight:int, playerPaddle:str, client:socket.
         # =========================================================================================
         
         # send paddle y to server
-        data_to_send = {"paddle_y": playerPaddleObj.rect.y}
+        data_to_send = {"paddle_y": playerPaddleObj.rect.y, "sync": sync}
         
         # if left player send ball x, y, l score, and r score to server
         if playerPaddle == "left":
@@ -167,6 +167,7 @@ def playGame(screenWidth:int, screenHeight:int, playerPaddle:str, client:socket.
         # then you are ahead of them in time, if theirs is larger, they are ahead of you, and you need to
         # catch up (use their info)
         sync += 1
+        last_received_sync = -1
         # =========================================================================================
         # Send your server update here at the end of the game loop to sync your game with your
         # opponent's game
@@ -182,6 +183,13 @@ def playGame(screenWidth:int, screenHeight:int, playerPaddle:str, client:socket.
                 try:
                     msg = json.loads(data.decode())
                     
+                    # check sync and discard if older than what we've seen
+                    if "sync" in msg:
+                        incoming_sync = msg["sync"]
+                        if incoming_sync <= last_received_sync:
+                            continue # skip old packet
+                        last_received_sync = incoming_sync
+
                     if "paddle_y" in msg:
                         opponentPaddleObj.rect.y = msg["paddle_y"]
                     
