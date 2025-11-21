@@ -1,9 +1,9 @@
 # =================================================================================================
-# Contributing Authors:	    <Anyone who touched the code>
-# Email Addresses:          <Your uky.edu email addresses>
-# Date:                     <The date the file was last edited>
-# Purpose:                  <How this file contributes to the project>
-# Misc:                     <Not Required.  Anything else you might want to include>
+# Contributing Authors:	    Rowan Hallock, Ben Shuler, Nate Berry
+# Email Addresses:          rha321@uky.edu, bmsh239@uky.edu, nbbe226@uky.edu
+# Date:                     11/21/2025
+# Purpose:                  This file handles the server logic for the pong game. It is responsible for handling the connections from the clients and sharing the data between them.
+# Misc:                     N/A
 # =================================================================================================
 
 import socket
@@ -20,10 +20,10 @@ import time
 clients = []
 
 # =================================================================================================
-# Author: <Who wrote this method> 
-# Purpose: <What should this method do>
-# Pre: <What preconditions does this method expect to be true? Ex. This method expects the program to be in X state before being called> 
-# Post: <What postconditions are true after this method is called? Ex. This method changed global variable X to Y>
+# Author: Rowan Hallock, Ben Shuler, Nate Berry
+# Purpose: Handles the communication between the clients and the server.
+# Pre: The server is running and the clients are connected.
+# Post: The data is shared between the clients and the server.
 # =================================================================================================
 def handle_clients(conn: socket.socket, addr: tuple) -> None:
 
@@ -36,8 +36,11 @@ def handle_clients(conn: socket.socket, addr: tuple) -> None:
         # assign sides
         if clients.index(conn) == 0:
             side = "left"
-        else:
+        elif clients.index(conn) == 1:
             side = "right"
+        else:
+            side = "spectator"
+        
 
         # initial width and height to the client
         msg = f"640,480,{side}"
@@ -57,7 +60,6 @@ def handle_clients(conn: socket.socket, addr: tuple) -> None:
     finally:
         try:
             conn.close()
-
         finally:
             if conn in clients:
                 clients.remove(conn)
@@ -69,8 +71,9 @@ server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 server.bind(("0.0.0.0", 12345))
 server.listen()
 
-print("Listening on port 12345...")
+print("Listening on port 12345")
 
+# listen for connection
 while True:
     conn, addr = server.accept()
     clients.append(conn)

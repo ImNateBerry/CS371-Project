@@ -1,9 +1,9 @@
 # =================================================================================================
-# Contributing Authors:	    <Anyone who touched the code>
-# Email Addresses:          <Your uky.edu email addresses>
-# Date:                     <The date the file was last edited>
-# Purpose:                  <How this file contributes to the project>
-# Misc:                     <Not Required.  Anything else you might want to include>
+# Contributing Authors:	    Rowan Hallock, Ben Shuler, Nate Berry
+# Email Addresses:          rha321@uky.edu, bmsh239@uky.edu, nbbe226@uky.edu
+# Date:                     11/21/2025
+# Purpose:                  This file handles the client logic for the pong game. It is responsible for handling the connections from the server and displaying the game.
+# Misc:                     N/A
 # =================================================================================================
 
 import pygame 
@@ -52,9 +52,12 @@ def playGame(screenWidth:int, screenHeight:int, playerPaddle:str, client:socket.
     if playerPaddle == "left":
         opponentPaddleObj = rightPaddle
         playerPaddleObj = leftPaddle
-    else:
+    elif playerPaddle == "right":
         opponentPaddleObj = leftPaddle
         playerPaddleObj = rightPaddle
+    else: # spectator but still need to reference paddles to avoid crashing
+        playerPaddleObj = leftPaddle 
+        opponentPaddleObj = rightPaddle
 
     lScore = 0
     rScore = 0
@@ -91,14 +94,11 @@ def playGame(screenWidth:int, screenHeight:int, playerPaddle:str, client:socket.
                 pygame.quit()
                 sys.exit()
             elif event.type == pygame.KEYDOWN:
-                if lScore > 4 or rScore > 4:
-                    if event.key == pygame.K_r:
-                        reset_game_state()
-                        continue
                 if event.key == pygame.K_DOWN:
                     playerPaddleObj.moving = "down"
                 elif event.key == pygame.K_UP:
                     playerPaddleObj.moving = "up"
+
             elif event.type == pygame.KEYUP:
                 playerPaddleObj.moving = ""
 
@@ -109,11 +109,7 @@ def playGame(screenWidth:int, screenHeight:int, playerPaddle:str, client:socket.
         # =========================================================================================
         
         # send paddle y to server
-
-        data_to_send = {
-            "paddle_y": playerPaddleObj.rect.y,
-            "sync": sync
-        }
+        data_to_send = {"paddle_y": playerPaddleObj.rect.y}
         
         # if left player send ball x, y, l score, and r score to server
         if playerPaddle == "left":
@@ -122,8 +118,8 @@ def playGame(screenWidth:int, screenHeight:int, playerPaddle:str, client:socket.
             data_to_send["l_score"] = lScore
             data_to_send["r_score"] = rScore
 
-        # sends data to server
-        client.send(json.dumps(data_to_send).encode())
+            # sends data to server
+            client.send(json.dumps(data_to_send).encode())
 
         # Update the player paddle and opponent paddle's location on the screen
         for paddle in [playerPaddleObj, opponentPaddleObj]:
@@ -178,8 +174,13 @@ def playGame(screenWidth:int, screenHeight:int, playerPaddle:str, client:socket.
             pygame.draw.rect(screen, WHITE, i)
         
         # Drawing the player's new location
-        for paddle in [playerPaddleObj, opponentPaddleObj]:
-            pygame.draw.rect(screen, WHITE, paddle)
+        # for spectator draw leftPaddle and rightPaddle explicitly since playerPaddleObj is just a reference to leftPaddle
+        if playerPaddle == "spectator":
+            pygame.draw.rect(screen, WHITE, leftPaddle)
+            pygame.draw.rect(screen, WHITE, rightPaddle)
+        else:
+            for paddle in [playerPaddleObj, opponentPaddleObj]:
+                pygame.draw.rect(screen, WHITE, paddle)
 
         pygame.draw.rect(screen, WHITE, topWall)
         pygame.draw.rect(screen, WHITE, bottomWall)
@@ -191,6 +192,10 @@ def playGame(screenWidth:int, screenHeight:int, playerPaddle:str, client:socket.
         # then you are ahead of them in time, if theirs is larger, they are ahead of you, and you need to
         # catch up (use their info)
         sync += 1
+        last_received_sync = -1
+        # these are for spectators for each side
+        last_sync_left = -1
+        last_sync_right = -1
         # =========================================================================================
         # Send your server update here at the end of the game loop to sync your game with your
         # opponent's game
@@ -205,12 +210,6 @@ def playGame(screenWidth:int, screenHeight:int, playerPaddle:str, client:socket.
                 # try to parse data from server
                 try:
                     msg = json.loads(data.decode())
-
-                    if "sync" in msg:
-                        incoming_sync = msg["sync"]
-                        if incoming_sync <= last_recieved_sync:
-                            continue
-                        last_recieved_sync = incoming_sync
                     
                     if "paddle_y" in msg:
                         opponentPaddleObj.rect.y = msg["paddle_y"]

@@ -4,7 +4,7 @@ Contact Info
 Group Members & Email Addresses:
 
     Rowan Hallock - rha321@uky.edu
-    Ben Schuler - bmsh239@uky.edu
+    Ben Shuler - bmsh239@uky.edu
     Nate Berry - nbbe226@uky.edu
 
 Versioning
