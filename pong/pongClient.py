@@ -93,12 +93,17 @@ def playGame(screenWidth:int, screenHeight:int, playerPaddle:str, client:socket.
             if event.type == pygame.QUIT:
                 pygame.quit()
                 sys.exit()
-            elif event.type == pygame.KEYDOWN:
+            elif event.type == pygame.KEYDOWN and playerPaddle != "spectator":
+                if lScore > 4 or rScore > 4:
+                    if event.key == pygame.K_r:
+                        reset_game_state()
+                        continue
                 if event.key == pygame.K_DOWN:
                     playerPaddleObj.moving = "down"
                 elif event.key == pygame.K_UP:
                     playerPaddleObj.moving = "up"
 
+            elif event.type == pygame.KEYUP and playerPaddle != "spectator":
             elif event.type == pygame.KEYUP:
                 playerPaddleObj.moving = ""
 
@@ -108,15 +113,23 @@ def playGame(screenWidth:int, screenHeight:int, playerPaddle:str, client:socket.
         # Feel free to change when the score is updated to suit your needs/requirements
         # =========================================================================================
         
-        # send paddle y to server
-        data_to_send = {"paddle_y": playerPaddleObj.rect.y}
-        
-        # if left player send ball x, y, l score, and r score to server
-        if playerPaddle == "left":
-            data_to_send["ball_x"] = ball.rect.x
-            data_to_send["ball_y"] = ball.rect.y
-            data_to_send["l_score"] = lScore
-            data_to_send["r_score"] = rScore
+        if playerPaddle != "spectator":
+            # send paddle y to server
+
+            data_to_send = {
+            
+                "paddle_y": playerPaddleObj.rect.y,
+            "sync": sync
+        ,
+                "sync": sync
+            }
+            
+            # if left player send ball x, y, l score, and r score to server
+            if playerPaddle == "left":
+                data_to_send["ball_x"] = ball.rect.x
+                data_to_send["ball_y"] = ball.rect.y
+                data_to_send["l_score"] = lScore
+                data_to_send["r_score"] = rScore
 
             # sends data to server
             client.send(json.dumps(data_to_send).encode())
@@ -210,6 +223,47 @@ def playGame(screenWidth:int, screenHeight:int, playerPaddle:str, client:socket.
                 # try to parse data from server
                 try:
                     msg = json.loads(data.decode())
+                    
+                    incoming_sync = msg.get("sync", -1)
+
+                    if playerPaddle != "spectator":
+                        # normal player only cares about opponent
+                        if incoming_sync > last_received_sync:
+                            last_received_sync = incoming_sync
+                            
+                            if "paddle_y" in msg:
+                                opponentPaddleObj.rect.y = msg["paddle_y"]
+                            
+                            # if right player update ball x, y, l score, and r score
+                            if playerPaddle == "right":
+                                if "ball_x" in msg: ball.rect.x = msg["ball_x"]
+                                if "ball_y" in msg: ball.rect.y = msg["ball_y"]
+                                if "l_score" in msg: lScore = msg["l_score"]
+                                if "r_score" in msg: rScore = msg["r_score"]
+                    else:
+                        # spectator checks sync separately for left and right sides
+                        if "ball_x" in msg: 
+                            #  from left player
+                            if incoming_sync > last_sync_left:
+                                last_sync_left = incoming_sync
+                                leftPaddle.rect.y = msg.get("paddle_y", leftPaddle.rect.y)
+                                ball.rect.x = msg["ball_x"]
+                                ball.rect.y = msg["ball_y"]
+                                lScore = msg.get("l_score", lScore)
+                                rScore = msg.get("r_score", rScore)
+                        else:
+                            # from right player 
+                            if incoming_sync > last_sync_right:
+                                last_sync_right = incoming_sync
+                                if "paddle_y" in msg:
+                                    rightPaddle.rect.y = msg["paddle_y"]
+
+
+                    if "sync" in msg:
+                        incoming_sync = msg["sync"]
+                        if incoming_sync <= last_recieved_sync:
+                            continue
+                        last_recieved_sync = incoming_sync
                     
                     if "paddle_y" in msg:
                         opponentPaddleObj.rect.y = msg["paddle_y"]
