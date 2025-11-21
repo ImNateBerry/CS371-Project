@@ -1,9 +1,9 @@
 # =================================================================================================
-# Contributing Authors:	    <Anyone who touched the code>
-# Email Addresses:          <Your uky.edu email addresses>
-# Date:                     <The date the file was last edited>
-# Purpose:                  <How this file contributes to the project>
-# Misc:                     <Not Required.  Anything else you might want to include>
+# Contributing Authors:	    Rowan Hallock, Ben Shuler, Nate Berry
+# Email Addresses:          rha321@uky.edu, bmsh239@uky.edu, nbbe226@uky.edu
+# Date:                     11/21/2025
+# Purpose:                  This file handles the client logic for the pong game. It is responsible for handling the connections from the server and displaying the game.
+# Misc:                     N/A
 # =================================================================================================
 
 import pygame
