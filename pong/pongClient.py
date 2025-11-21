@@ -6,8 +6,8 @@
 # Misc:                     <Not Required.  Anything else you might want to include>
 # =================================================================================================
 
-import pygame
-import tkinter as tk
+import pygame 
+import tkinter as tk 
 import sys
 import socket
 import json
@@ -61,8 +61,25 @@ def playGame(screenWidth:int, screenHeight:int, playerPaddle:str, client:socket.
 
     sync = 0
 
+    last_recieved_sync = -1
+
     # set client to non-blocking to stop receive part from bugging out in the loop
     client.setblocking(False)
+
+
+    #Author: Ben Shuler
+    #Purpose: Restarts the game for both players to play again
+    #Pre: This program expects the game to be finished and one player to press 'R'
+    #Post: Resets the scores, paddle positions, and ball position to start a new game
+    def reset_game_state() -> None: 
+        nonlocal lScore, rScore
+        lScore = 0
+        rScore = 0
+        leftPaddle.rect.y = paddleStartPosY
+        rightPaddle.rect.y = paddleStartPosY
+        ball.reset(nowGoing="left" if playerPaddle == "left" else "right")
+        leftPaddle.moving = ""
+        rightPaddle.moving = ""
 
     while True:
         # Wiping the screen
@@ -74,12 +91,14 @@ def playGame(screenWidth:int, screenHeight:int, playerPaddle:str, client:socket.
                 pygame.quit()
                 sys.exit()
             elif event.type == pygame.KEYDOWN:
+                if lScore > 4 or rScore > 4:
+                    if event.key == pygame.K_r:
+                        reset_game_state()
+                        continue
                 if event.key == pygame.K_DOWN:
                     playerPaddleObj.moving = "down"
-
                 elif event.key == pygame.K_UP:
                     playerPaddleObj.moving = "up"
-
             elif event.type == pygame.KEYUP:
                 playerPaddleObj.moving = ""
 
@@ -90,7 +109,11 @@ def playGame(screenWidth:int, screenHeight:int, playerPaddle:str, client:socket.
         # =========================================================================================
         
         # send paddle y to server
-        data_to_send = {"paddle_y": playerPaddleObj.rect.y}
+
+        data_to_send = {
+            "paddle_y": playerPaddleObj.rect.y,
+            "sync": sync
+        }
         
         # if left player send ball x, y, l score, and r score to server
         if playerPaddle == "left":
@@ -116,8 +139,9 @@ def playGame(screenWidth:int, screenHeight:int, playerPaddle:str, client:socket.
             winText = "Player 1 Wins! " if lScore > 4 else "Player 2 Wins! "
             textSurface = winFont.render(winText, False, WHITE, (0,0,0))
             textRect = textSurface.get_rect()
-            textRect.center = ((screenWidth/2), screenHeight/2)
+            textRect.center = ((screenWidth/2), screenHeight/2 - 30)
             winMessage = screen.blit(textSurface, textRect)
+            
         else:
 
             # ==== Ball Logic =====================================================================
@@ -181,6 +205,12 @@ def playGame(screenWidth:int, screenHeight:int, playerPaddle:str, client:socket.
                 # try to parse data from server
                 try:
                     msg = json.loads(data.decode())
+
+                    if "sync" in msg:
+                        incoming_sync = msg["sync"]
+                        if incoming_sync <= last_recieved_sync:
+                            continue
+                        last_recieved_sync = incoming_sync
                     
                     if "paddle_y" in msg:
                         opponentPaddleObj.rect.y = msg["paddle_y"]
@@ -195,6 +225,8 @@ def playGame(screenWidth:int, screenHeight:int, playerPaddle:str, client:socket.
                     pass # catches error in JSON parsing
         except:
             pass 
+
+        
         
 
 # This is where you will connect to the server to get the info required to call the game loop.  Mainly
@@ -219,7 +251,7 @@ def joinServer(ip:str, port:str, errorLabel:tk.Label, app:tk.Tk) -> None:
     parts = output.split(",")
     screenWidth = int(parts[0])
     screenHeight = int(parts[1])
-    assignedSide = "left"
+    assignedSide = "left" 
     if len(parts) > 2:
         assignedSide = parts[2].strip()
 
@@ -270,4 +302,4 @@ if __name__ == "__main__":
     # Uncomment the line below if you want to play the game without a server to see how it should work
     # the startScreen() function should call playGame with the arguments given to it by the server this is
     # here for demo purposes only
-    # playGame(640, 480,"left",socket.socket(socket.AF_INET, socket.SOCK_STREAM))
+    #playGame(640, 480,"left",socket.socket(socket.AF_INET, socket.SOCK_STREAM))
