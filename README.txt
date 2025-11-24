@@ -33,7 +33,3 @@ Run these commands to begin playing the game:
 
 cd pong
 python pongClient.py
-
-Known Bugs
-==========
-- Only player who joins first can reset game
