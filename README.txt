@@ -29,7 +29,12 @@ Run the following line to install the required libraries for this project:
 
 `pip3 install -r requirements.txt`
 
-Run these commands to begin playing the game:
+Run these commands to start the server:
+
+cd pong
+python pongServer.py
+
+Run these commands to open the server connection portal and begin playing the game:
 
 cd pong
 python pongClient.py
